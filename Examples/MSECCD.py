@@ -122,14 +122,21 @@ class MSECCD:
         for pr in self.result_dict:
             for file in self.result_dict[pr]:
                 if self.result_dict[pr][file]["result"]["patchClass"] in ['ED', 'MO', 'SP']:
-                    df_data_files.append([self.variant1, self.variant2, pr, file, self.result_dict[pr][file]["result"]["type"], self.result_dict[pr][file]["result"]["patchClass"]])
+                    df_data_files.append([self.variant1, self.variant2, pr, file, self.result_dict[pr][file]["result"]["type"], self.result_dict[pr][file]["result"]["patchClass"], 1])
                 else:
-                    df_data_files.append([self.variant1, self.variant2, pr, file, 'None', self.result_dict[pr][file]["result"]["patchClass"]])
-            df_data_patches.append([self.variant1, self.variant2, pr, self.pr_classifications[pr]["class"]])
+                    df_data_files.append([self.variant1, self.variant2, pr, file, 'None', self.result_dict[pr][file]["result"]["patchClass"], 0])
+                    
+            if self.pr_classifications[pr]["class"] in ['ED', 'MO', 'SP']:
+                df_data_patches.append([self.variant1, self.variant2, pr, self.pr_classifications[pr]["class"], 1])
+            else:
+                df_data_patches.append([self.variant1, self.variant2, pr, self.pr_classifications[pr]["class"], 0])
 
-        self.df_files_classes = pd.DataFrame(df_data_files, columns = ['Mainline', 'Fork', 'Pr nr', 'Filename', 'Operation', 'File classification'])
-        self.df_patch_classes = pd.DataFrame(df_data_patches, columns = ['Mainline', 'Fork', 'Pr nr', 'Patch classification'])
-            
+        self.df_files_classes = pd.DataFrame(df_data_files, columns = ['Mainline', 'Fork', 'Pr nr', 'Filename', 'Operation', 'File classification', 'Interesting'])
+        self.df_files_classes = self.df_files_classes.sort_values(by =  ['Pr nr', 'Interesting'], ascending=False)
+        
+        self.df_patch_classes = pd.DataFrame(df_data_patches, columns = ['Mainline', 'Fork', 'Pr nr', 'Patch classification', 'Interesting'])
+        self.df_patch_classes = self.df_patch_classes.sort_values(by ='Interesting', ascending=False) 
+    
     def printResults(self):
         print('\nClassification results:')
         for pr in self.result_dict:
