@@ -1,6 +1,7 @@
 import sys
 import time
 import pickle
+import pandas as pd
 
 import Methods.common as common
 import Methods.commitLoader as commitloader
@@ -79,6 +80,15 @@ class MSECCD:
                 pr_patch_ml_str = pr_patch_ml[0]
                 pr_title_ml_str = pr_title_ml[0]
 
+        print('pr_patch_ml:', pr_patch_ml)
+        print('pr_title_ml:', pr_title_ml)
+
+        df_data = []
+        for i in range(len(pr_patch_ml)):
+            df_data.append([pr_patch_ml[i], pr_title_ml[i]])
+
+        self.df_patches = pd.DataFrame(df_data, columns = ['Patch number', 'Patch title'])
+
         self.verbosePrint('Extracting finished.\n')
         self.verbosePrint('Summary of extraction:')
         
@@ -106,6 +116,20 @@ class MSECCD:
         
         return pr_patch_ml
     
+    def createDf(self):
+        df_data_files = []
+        df_data_patches = []
+        for pr in self.result_dict:
+            for file in self.result_dict[pr]:
+                if self.result_dict[pr][file]["result"]["patchClass"] in ['ED', 'MO', 'SP']:
+                    df_data_files.append([self.variant1, self.variant2, pr, file, self.result_dict[pr][file]["result"]["type"], self.result_dict[pr][file]["result"]["patchClass"]])
+                else:
+                    df_data_files.append([self.variant1, self.variant2, pr, file, 'None', self.result_dict[pr][file]["result"]["patchClass"]])
+            df_data_patches.append([self.variant1, self.variant2, pr, self.pr_classifications[pr]["class"]])
+
+        self.df_files_classes = pd.DataFrame(df_data_files, columns = ['Mainline', 'Fork', 'Pr nr', 'Filename', 'Operation', 'File classification'])
+        self.df_patch_classes = pd.DataFrame(df_data_patches, columns = ['Mainline', 'Fork', 'Pr nr', 'Patch classification'])
+            
     def printResults(self):
         print('\nClassification results:')
         for pr in self.result_dict:
@@ -455,12 +479,36 @@ class MSECCD:
         
         common.pickleFile(self.main_dir_results + self.repo_file + '_' + self.variant1.split('/')[0] + '_' + self.variant1.split('/')[1] + '_results', [self.result_dict, self.pr_classifications, all_counts, duration])
         
+    def dfPatches(self, nr_patches=-1):
+        if nr_patches ==-1:
+            return self.df_patches
+        else:
+            if nr_patches > self.df_patches.shape[0]:
+                print(f'The dataframe contain only {self.df_patches.shape[0]} rows. Printing only {self.df_patches.shape[0]} rows.')
+            return self.df_patches.head(nr_patches)
+    
+    def dfFileClass(self, nr_patches=-1):
+        if nr_patches ==-1:
+            return self.df_files_classes
+        else:
+            if nr_patches > self.df_files_classes.shape[0]:
+                print(f'The dataframe contain only {self.df_files_classes.shape[0]} rows. Printing only {self.df_files_classes.shape[0]} rows.')
+            return self.df_files_classes.head(nr_patches)
+        
+    def dfPatchClass(self, nr_patches=-1):
+        if nr_patches ==-1:
+            return self.df_patch_classes
+        else:
+            if nr_patches > self.df_patch_classes.shape[0]:
+                print(f'The dataframe contain only {self.df_patch_classes.shape[0]} rows. Printing only {self.df_patch_classes.shape[0]} rows.')
+            return self.df_patch_classes.head(nr_patches)
         
     def runClassification(self, prs_source):
         self.setPrs(prs_source)
         self.fetchPrData()
         print('======================================================================')
         self.classify()
+        self.createDf()
         print('======================================================================')
         self.printResults()
         print('======================================================================')
